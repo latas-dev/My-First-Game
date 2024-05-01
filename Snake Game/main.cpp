@@ -4,24 +4,23 @@
 #define W_WIDTH		640
 #define W_HEIGHT	480
 
-#define S_SIZE		W_WIDTH / 10
+// Snake and Ball
+#define S_HEIGHT	W_HEIGHT / 20
+#define S_WIDTH		S_HEIGHT * 5
 #define B_RADIUS	W_WIDTH / 20
-//constexpr auto RATIO = W_WIDTH / W_HEIGHT;
-
-//#define S_WIDTH		W_WIDTH / 20
-//#define S_HEIGHT	S_WIDTH / RATIO
 
 /* TODO LIST:
    + Finish detectCollision()
    + Add handleCollision() method on Ball
 */
 
-enum Direction
+enum class Direction
 {
-	UP,
-	RIGHT,
-	DOWN,
-	LEFT
+	None,
+	Up,
+	Right,
+	Down,
+	Left
 };
 
 // Returns the side where the subject collided with the object
@@ -31,10 +30,33 @@ Direction detectCollision(const sf::Shape& sub, const sf::Shape& obj)
 	sf::FloatRect subBounds = sub.getGlobalBounds();
 	sf::FloatRect objBounds = obj.getGlobalBounds();
 
-	// TODO: 
-	// Detect collision Direction
-	// Return collision Direction
 
+	if (subBounds.intersects(objBounds))
+	{
+		float dx = subBounds.left + subBounds.width / 2 - (objBounds.left + objBounds.width / 2);
+		float dy = subBounds.top + subBounds.height / 2 - (objBounds.top + objBounds.height / 2);
+
+		float overlapX = subBounds.width / 2 + objBounds.width / 2 - std::abs(dx);
+		float overlapY = subBounds.height / 2 + objBounds.height / 2 - std::abs(dy);
+
+		// y axis collision
+		if (overlapX >= overlapY)
+		{
+			if (dy > 0)
+				return Direction::Up;
+			else
+				return Direction::Down;
+		}
+		else
+		{
+			if (dx > 0)
+				return Direction::Left;
+			else
+				return Direction::Right;
+		}
+	}
+
+	return Direction::None;
 }
 
 class Snake
@@ -42,18 +64,13 @@ class Snake
 public:
 	sf::RectangleShape	m_shape;
 	int					m_speed;
-	//float				m_speedX;
-	//float				m_speedY;
 
 	Snake(const int xPosition, const int yPosition) 
 		: m_shape(sf::Vector2f(20.0f, 20.0f))
-		, m_speed(S_SIZE)
-		//, m_speedX(S_WIDTH)
-		//, m_speedY(S_HEIGHT)
+		, m_speed(S_HEIGHT)
 	{
 		m_shape.setPosition(xPosition, yPosition);
-		m_shape.setSize(sf::Vector2f(S_SIZE, S_SIZE));
-		//m_shape.setSize(sf::Vector2f(S_WIDTH, S_HEIGHT));
+		m_shape.setSize(sf::Vector2f(S_WIDTH, S_HEIGHT));
 	}
 
 	void moveSnake(Direction dir)
@@ -65,19 +82,19 @@ public:
 
 		switch (dir)
 		{
-		case UP:
+		case Direction::Up:
 			if (position.y <= 0) return;
 			m_shape.setPosition(position.x, position.y - m_speed);
 			break;
-		case RIGHT:
+		case Direction::Right:
 			if (position.x + size.x >= W_WIDTH) return;
 			m_shape.setPosition(position.x + m_speed, position.y);
 			break;
-		case DOWN:
+		case Direction::Down:
 			if (position.y + size.y >= W_HEIGHT) return;
 			m_shape.setPosition(position.x, position.y + m_speed);
 			break;
-		case LEFT:
+		case Direction::Left:
 			if (position.x <= 0) return;
 			m_shape.setPosition(position.x - m_speed, position.y);
 			break;
@@ -106,21 +123,21 @@ public:
 		m_circle.setPosition(W_WIDTH / 2, W_HEIGHT / 2);
 	}
 
-	void bounceBall()
+	void bounceBall(Direction dir)
 	{
 		sf::FloatRect bounds = m_circle.getGlobalBounds();
 		sf::Vector2f position = m_circle.getPosition();
 
-		if (bounds.left <= 0)
+		if (bounds.left <= 0 || dir == Direction::Left)
 			m_speedX = std::abs(m_speedX);
 
-		else if (bounds.left + bounds.width >= W_WIDTH)
+		else if (bounds.left + bounds.width >= W_WIDTH || dir == Direction::Right)
 			m_speedX = -std::abs(m_speedX);
 			
-		else if (bounds.top + bounds.height >= W_HEIGHT)
+		else if (bounds.top + bounds.height >= W_HEIGHT || dir == Direction::Down)
 			m_speedY = -std::abs(m_speedY);
 			
-		else if (bounds.top <= 0) 
+		else if (bounds.top <= 0 || dir == Direction::Up) 
 			m_speedY = std::abs(m_speedY);
 
 		m_circle.setPosition(position.x + m_speedX, position.y + m_speedY);
@@ -138,6 +155,8 @@ int main(void)
 	Snake snake(100, 100);
 	Ball ball;
 
+	Direction collisionDir;
+
 	while (window.isOpen())
 	{
 		sf::Event event;
@@ -150,13 +169,13 @@ int main(void)
 				break;
 			case sf::Event::KeyPressed:
 				if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
-					snake.moveSnake(LEFT);
+					snake.moveSnake(Direction::Left);
 				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
-					snake.moveSnake(RIGHT);
+					snake.moveSnake(Direction::Right);
 				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-					snake.moveSnake(UP);
+					snake.moveSnake(Direction::Up);
 				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-					snake.moveSnake(DOWN);
+					snake.moveSnake(Direction::Down);
 				break;
 			default:
 				break;
@@ -165,7 +184,8 @@ int main(void)
 		window.clear();
 		window.draw(snake.m_shape);
 		window.draw(ball.m_circle);
-		ball.bounceBall();
+		collisionDir = detectCollision(ball.m_circle, snake.m_shape);
+		ball.bounceBall(collisionDir);
 		window.display();
 	}
 
