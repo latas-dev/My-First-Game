@@ -5,9 +5,9 @@
 #define W_HEIGHT	480
 
 // Snake and Ball
-#define S_HEIGHT	W_HEIGHT / 20
+#define S_HEIGHT	W_HEIGHT / 30
 #define S_WIDTH		S_HEIGHT * 5
-#define B_RADIUS	W_WIDTH / 20
+#define B_RADIUS	W_WIDTH / 60
 
 /* TODO LIST:
    + Finish detectCollision()
@@ -77,8 +77,6 @@ public:
 	{
 		sf::Vector2f position = m_shape.getPosition();
 		sf::Vector2f size = m_shape.getSize();
-		// TODO:
-		// ADD COLLISION
 
 		switch (dir)
 		{
@@ -100,11 +98,6 @@ public:
 			break;
 		}
 	}
-
-	// TODO:
-	// Create Reset Method
-	// Create Growing Method
-	// Create Losing Method
 };
 
 class Ball
@@ -116,8 +109,8 @@ public:
 
 	Ball()
 		: m_circle(B_RADIUS)
-		, m_speedX(0.1f)
-		, m_speedY(0.1f)
+		, m_speedX(0.08f)
+		, m_speedY(0.08f)
 	{
 		m_circle.setFillColor(sf::Color::Red);
 		m_circle.setPosition(W_WIDTH / 2, W_HEIGHT / 2);
@@ -145,14 +138,11 @@ public:
 
 };
 
-// TODO:
-// Create Pill Struct
-
 int main(void)
 {
 	sf::RenderWindow window(sf::VideoMode(W_WIDTH, W_HEIGHT), "Snake Game");
 
-	Snake snake(100, 100);
+	Snake snake(300, 420);
 	Ball ball;
 
 	Direction collisionDir;
