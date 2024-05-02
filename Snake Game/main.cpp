@@ -4,9 +4,9 @@
 #define W_WIDTH		640
 #define W_HEIGHT	480
 
-// Snake and Ball
-#define S_HEIGHT	W_HEIGHT / 30
-#define S_WIDTH		S_HEIGHT * 5
+// Player and Ball
+#define P_HEIGHT	W_HEIGHT / 30
+#define P_WIDTH		P_HEIGHT * 5
 #define B_RADIUS	W_WIDTH / 60
 
 /* TODO LIST:
@@ -59,18 +59,18 @@ Direction detectCollision(const sf::Shape& sub, const sf::Shape& obj)
 	return Direction::None;
 }
 
-class Snake
+class Player
 {
 public:
 	sf::RectangleShape	m_shape;
 	int					m_speed;
 
-	Snake(const int xPosition, const int yPosition) 
+	Player(const int xPosition, const int yPosition) 
 		: m_shape(sf::Vector2f(20.0f, 20.0f))
-		, m_speed(S_HEIGHT)
+		, m_speed(P_HEIGHT)
 	{
 		m_shape.setPosition(xPosition, yPosition);
-		m_shape.setSize(sf::Vector2f(S_WIDTH, S_HEIGHT));
+		m_shape.setSize(sf::Vector2f(P_WIDTH, P_HEIGHT));
 	}
 
 	void moveSnake(Direction dir)
@@ -140,10 +140,20 @@ public:
 
 int main(void)
 {
-	sf::RenderWindow window(sf::VideoMode(W_WIDTH, W_HEIGHT), "Snake Game");
+	sf::RenderWindow window(sf::VideoMode(W_WIDTH, W_HEIGHT), "Player Game");
 
-	Snake snake(300, 420);
+	Player snake(300, 420);
 	Ball ball;
+
+	std::vector<sf::RectangleShape> blocks;
+	
+	for (size_t i = 0; i < 4 ; ++i)
+	{
+		sf::RectangleShape block(sf::Vector2f(P_WIDTH, P_HEIGHT));
+		block.setPosition((P_WIDTH + 30)*i + 130, 80);
+		block.setFillColor(sf::Color::Green);
+		blocks.push_back(block);
+	}
 
 	Direction collisionDir;
 
@@ -172,10 +182,32 @@ int main(void)
 			}
 		}
 		window.clear();
+		for (sf::RectangleShape &block : blocks)
+		{
+			window.draw(block);
+		}
 		window.draw(snake.m_shape);
 		window.draw(ball.m_circle);
 		collisionDir = detectCollision(ball.m_circle, snake.m_shape);
+		
+		Direction blockCollisionDir = Direction::None;
+		int collisionIndex = -1; // need to initialize the variable
+		for (size_t i = 0; i < blocks.size(); ++i)
+		{
+			blockCollisionDir = detectCollision(ball.m_circle, blocks[i]);
+			if (blockCollisionDir != Direction::None) {
+				collisionIndex = i;
+				collisionDir = blockCollisionDir;
+				break; // Break loop if any block collision detected
+			}
+		}
+
 		ball.bounceBall(collisionDir);
+
+		// Removes any block the ball collides with
+		if (collisionIndex != -1)
+			blocks.erase(blocks.begin() + collisionIndex);
+
 		window.display();
 	}
 
